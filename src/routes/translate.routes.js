@@ -2,6 +2,8 @@ import express from "express";
 import multer from "multer";
 
 import auth from "../middleware/auth.js";
+import deviceId from "../middleware/deviceId.js";
+import requireSignedIn from "../middleware/requireSignedIn.js";
 import usageLimit from "../middleware/usageLimit.js";
 import { translateMessage } from "../controllers/translate.controller.js";
 
@@ -17,7 +19,9 @@ const upload = multer({
 
 router.post(
   "/message",
+  deviceId,
   auth,
+  requireSignedIn,
   usageLimit,
   upload.single("audio"),
   translateMessage

@@ -62,6 +62,10 @@ export const EVENTS = {
   SUB_CANCELLED: "sub_cancelled",
   SUB_EXPIRED: "sub_expired",
 
+  // Mobile: the OS-native store review prompt was requested (iOS
+  // SKStoreReviewController / Google Play In-App Review). params.platform.
+  REVIEW_PROMPT_REQUESTED: "review_prompt_requested",
+
   // Website (ReplyLingo_website) events — fired by src/lib/webTracking.ts, not
   // the mobile app. distinctId is prefixed "web_" so it can never collide with
   // an app install id. params.channel is the classified traffic source

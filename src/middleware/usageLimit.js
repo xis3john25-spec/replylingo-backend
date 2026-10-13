@@ -1,5 +1,6 @@
 import Usage from "../models/Usage.js";
 import User from "../models/User.js";
+import { touchDeviceUsage } from "../services/deviceUsage.service.js";
 
 const usageLimit = async (req, res, next) => {
   try {
@@ -42,7 +43,18 @@ const usageLimit = async (req, res, next) => {
 
     console.log("User is not premium, checking usage limit for uid:", uid);
 
-    if (usage.usageCredits >= usage.freeLimit) {
+    // Device-level accounting (optional — only when the app sent a device
+    // id). Free usage is the larger of this account's and this device's, so
+    // a reinstall or an extra account on the same phone can't reset it.
+    const deviceUsage = await touchDeviceUsage({
+      deviceHash: req.deviceHash,
+      platform: req.devicePlatform,
+      uid,
+    });
+    req.deviceUsage = deviceUsage;
+    const freeUsed = Math.max(usage.usageCredits, deviceUsage?.usageCredits || 0);
+
+    if (freeUsed >= usage.freeLimit) {
       console.log("Free translation limit reached for uid (backoff):", uid);
       return res.status(403).json({
         success: false,

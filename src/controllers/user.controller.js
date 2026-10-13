@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import Usage from "../models/Usage.js";
+import { touchDeviceUsage, removeUidFromDeviceUsage } from "../services/deviceUsage.service.js";
 import PurchaseSurvey from "../models/PurchaseSurvey.js";
 import { isValidVoiceId, normalizeVoiceId, DEFAULT_VOICE_ID, VOICE_PERSONAS } from "../config/voiceCatalog.js";
 import { getSubscriberPremiumStatus } from "../services/revenuecat.service.js";
@@ -17,14 +18,18 @@ const getMe = async (req, res) => {
     $setOnInsert: {
       uid: req.user.uid,
       email: req.user.email ?? null,
-      guest:
-          req.user.firebase?.sign_in_provider === "anonymous" ||
-          req.user.provider_id === "anonymous",
     },
     // getMe is called on every app open, so this is the cheapest possible
     // place to track activity for re-engagement notifications — no extra
     // request needed from the client.
-    $set: { lastActiveAt: new Date() },
+    // `guest` is refreshed here (not only on insert) because an anonymous
+    // account can be upgraded in place to Google/Apple (same uid).
+    $set: {
+      lastActiveAt: new Date(),
+      guest:
+        req.user.firebase?.sign_in_provider === "anonymous" ||
+        req.user.provider_id === "anonymous",
+    },
   },
   {
   upsert: true,
@@ -33,6 +38,16 @@ const getMe = async (req, res) => {
 );
 
 const usage = await Usage.findOne({ uid: req.user.uid });
+
+// Optional device-level free usage (only when the app sent a device id).
+const deviceUsage = user?.premium
+  ? null
+  : await touchDeviceUsage({
+      deviceHash: req.deviceHash,
+      platform: req.devicePlatform,
+      uid: req.user.uid,
+    });
+const freeUsed = Math.max(usage?.usageCredits || 0, deviceUsage?.usageCredits || 0);
 
 console.log(user);
 
@@ -51,7 +66,7 @@ console.log(user);
 remainingFreeTranslations: user?.premium
   ? null
   : usage
-    ? Math.max(0, usage.freeLimit - usage.usageCredits)
+    ? Math.max(0, usage.freeLimit - freeUsed)
     : 3,
       },
     });
@@ -267,6 +282,11 @@ const deleteAccount = async (req, res) => {
     // Delete any checkout-abandonment survey answers (they're tied to the uid).
     const surveyDeleteResult = await PurchaseSurvey.deleteMany({ uid });
     console.log(`[deleteAccount] Survey deletion result:`, surveyDeleteResult);
+
+    // Device-level usage records: unlink this account and drop records no
+    // account belongs to any more (only a hash was ever stored).
+    const deviceRecordsDeleted = await removeUidFromDeviceUsage(uid);
+    console.log(`[deleteAccount] Device usage records deleted:`, deviceRecordsDeleted);
 
     res.status(200).json({
       success: true,
