@@ -176,7 +176,10 @@ export const translateMessage = async (req, res) => {
       const skipCharge = isReply && !finalAudioBuffer;
 
       if (!skipCharge) {
-        const usageCost = req.body.screen === "translate" ? 0.5 : 1;
+        // Free tier = 3 credits: an uploaded/shared voice note costs 0.5, the
+        // reply the user records costs 1 (on either screen). The in-app
+        // sample never reaches the server, so it costs nothing.
+        const usageCost = isReply ? 1 : 0.5;
         // Premium usage feeds only the daily abuse cap; free usage is the
         // lifetime allowance (see models/Usage.js).
         if (isPremium) {
