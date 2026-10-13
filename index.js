@@ -7,6 +7,7 @@ import cors from "cors";
 import "./src/config/firebase.js";
 import connectDB from "./src/config/mongo.js";
 
+
 import userRoutes from "./src/routes/user.routes.js";
 import translateRoutes from "./src/routes/translate.routes.js";
 import notificationsRoutes from "./src/routes/notifications.routes.js";
