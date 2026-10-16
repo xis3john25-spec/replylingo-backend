@@ -33,6 +33,11 @@ export const EVENTS = {
   TRANSLATION_FAILED: "translation_failed",
 
   PAYWALL_VIEWED: "paywall_viewed",
+  PLAN_SELECTED: "plan_selected",
+  // Mobile paywall: plan tapped (params.plan, params.platform) and whether the
+  // selected plan showed a free trial (params.eligible, params.platform).
+  PAYWALL_PLAN_SELECTED: "paywall_plan_selected",
+  PAYWALL_TRIAL_SHOWN: "paywall_trial_shown",
   PURCHASE_STARTED: "purchase_started",
   PURCHASE_COMPLETED: "purchase_completed",
   PURCHASE_FAILED: "purchase_failed",
